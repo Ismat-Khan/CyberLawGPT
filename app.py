@@ -1,9 +1,6 @@
-# app.py
-
 import io
 import os
 import re
-import hashlib
 from typing import List, Dict, Tuple
 
 import numpy as np
@@ -45,129 +42,84 @@ st.set_page_config(
 
 
 # ============================================================
-# CUSTOM CSS
+# SAFE CSS
 # ============================================================
 
 st.markdown(
     """
     <style>
-        .stApp {
-            background:
-                radial-gradient(
-                    circle at top right,
-                    rgba(0, 190, 170, 0.12),
-                    transparent 35%
-                ),
-                #07111f;
-            color: #f8fafc;
-        }
 
-        [data-testid="stSidebar"] {
-            background: #0b1728;
-            border-right: 1px solid rgba(255,255,255,0.08);
-        }
+    .stApp {
+        background:
+            radial-gradient(
+                circle at top right,
+                rgba(20, 184, 166, 0.12),
+                transparent 35%
+            ),
+            #07111f;
+        color: #f8fafc;
+    }
 
-        .hero {
-            padding: 28px 0 18px 0;
-        }
+    [data-testid="stSidebar"] {
+        background: #0b1728;
+        border-right: 1px solid rgba(255,255,255,0.08);
+    }
 
-        .hero-badge {
-            display: inline-block;
-            padding: 7px 13px;
-            border-radius: 999px;
-            background: rgba(20,184,166,0.12);
-            border: 1px solid rgba(45,212,191,0.25);
-            color: #5eead4;
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
+    .hero-box {
+        padding: 24px 0 18px 0;
+    }
 
-        .hero-title {
-            font-size: 48px;
-            line-height: 1.05;
-            font-weight: 800;
-            margin-top: 14px;
-            margin-bottom: 10px;
-            color: #f8fafc;
-        }
+    .hero-subtitle {
+        color: #a9b7c8;
+        font-size: 17px;
+        line-height: 1.6;
+        margin-top: -8px;
+        margin-bottom: 20px;
+    }
 
-        .hero-subtitle {
-            font-size: 17px;
-            color: #a9b7c8;
-            max-width: 850px;
-            line-height: 1.6;
-        }
+    .metric-card {
+        background: #0d1b2d;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 15px;
+        padding: 16px;
+        text-align: center;
+    }
 
-        .info-card {
-            padding: 18px;
-            border-radius: 16px;
-            background: rgba(15, 31, 51, 0.75);
-            border: 1px solid rgba(255,255,255,0.08);
-            margin-bottom: 15px;
-        }
+    .metric-number {
+        font-size: 25px;
+        font-weight: 800;
+        color: #5eead4;
+    }
 
-        .info-title {
-            font-weight: 700;
-            color: #f8fafc;
-            margin-bottom: 7px;
-        }
+    .metric-label {
+        color: #94a3b8;
+        font-size: 13px;
+    }
 
-        .info-text {
-            color: #a9b7c8;
-            line-height: 1.5;
-        }
+    .section-label {
+        color: #cbd5e1;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
 
-        .answer-container {
-            background: #0d1b2d;
-            border: 1px solid rgba(45,212,191,0.20);
-            border-radius: 18px;
-            padding: 22px;
-            margin-top: 15px;
-        }
+    .disclaimer {
+        color: #94a3b8;
+        font-size: 12px;
+        line-height: 1.5;
+        padding: 15px;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        margin-top: 30px;
+    }
 
-        .metric-card {
-            background: #0d1b2d;
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 15px;
-            padding: 16px;
-            text-align: center;
-        }
+    div[data-testid="stChatMessage"] {
+        background: rgba(13, 27, 45, 0.55);
+        border-radius: 16px;
+    }
 
-        .metric-number {
-            font-size: 25px;
-            font-weight: 800;
-            color: #5eead4;
-        }
+    .stButton > button {
+        border-radius: 10px;
+    }
 
-        .metric-label {
-            color: #94a3b8;
-            font-size: 13px;
-        }
-
-        .section-label {
-            color: #cbd5e1;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .disclaimer {
-            color: #94a3b8;
-            font-size: 12px;
-            line-height: 1.5;
-            padding: 15px;
-            border-top: 1px solid rgba(255,255,255,0.08);
-            margin-top: 30px;
-        }
-
-        div[data-testid="stChatMessage"] {
-            background: rgba(13, 27, 45, 0.55);
-            border-radius: 16px;
-        }
-
-        .stButton > button {
-            border-radius: 10px;
-        }
     </style>
     """,
     unsafe_allow_html=True,
@@ -181,19 +133,15 @@ st.markdown(
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "documents" not in st.session_state:
-    st.session_state.documents = None
+if "selected_question" not in st.session_state:
+    st.session_state.selected_question = None
 
 
 # ============================================================
-# API KEY
+# GROQ API KEY
 # ============================================================
 
 def get_groq_api_key() -> str:
-    """
-    Get GROQ_API_KEY from Streamlit secrets first,
-    then environment variables.
-    """
 
     try:
         key = st.secrets.get("GROQ_API_KEY", "")
@@ -207,7 +155,7 @@ def get_groq_api_key() -> str:
 
 
 # ============================================================
-# DOWNLOAD PDF
+# DOWNLOAD OFFICIAL PDF
 # ============================================================
 
 @st.cache_data(show_spinner=False)
@@ -284,7 +232,6 @@ def detect_section(text: str) -> str:
         )
 
         if match:
-
             return f"Section {match.group(1)}"
 
     return "General"
@@ -302,7 +249,10 @@ def create_chunks(
 
     chunks = []
 
-    for page_number, page_text in enumerate(pages, start=1):
+    for page_number, page_text in enumerate(
+        pages,
+        start=1,
+    ):
 
         if not page_text.strip():
             continue
@@ -318,7 +268,9 @@ def create_chunks(
                 len(words),
             )
 
-            chunk_text = " ".join(words[start:end]).strip()
+            chunk_text = " ".join(
+                words[start:end]
+            ).strip()
 
             if chunk_text:
 
@@ -348,7 +300,9 @@ def create_chunks(
 @st.cache_resource(show_spinner=False)
 def load_embedding_model():
 
-    return SentenceTransformer(EMBED_MODEL)
+    return SentenceTransformer(
+        EMBED_MODEL
+    )
 
 
 # ============================================================
@@ -383,16 +337,22 @@ def build_knowledge_base():
 
     pdf_bytes = download_pdf()
 
-    pages = extract_pages(pdf_bytes)
+    pages = extract_pages(
+        pdf_bytes
+    )
 
-    chunks = create_chunks(pages)
+    chunks = create_chunks(
+        pages
+    )
 
     texts = tuple(
         chunk["text"]
         for chunk in chunks
     )
 
-    embeddings = create_embeddings(texts)
+    embeddings = create_embeddings(
+        texts
+    )
 
     return chunks, embeddings
 
@@ -431,7 +391,9 @@ def retrieve_documents(
 
         item = dict(chunks[index])
 
-        item["score"] = float(scores[index])
+        item["score"] = float(
+            scores[index]
+        )
 
         results.append(item)
 
@@ -439,10 +401,12 @@ def retrieve_documents(
 
 
 # ============================================================
-# RESPONSE SIZE
+# RESPONSE LIMIT
 # ============================================================
 
-def get_response_limit(response_size: str) -> int:
+def get_response_limit(
+    response_size: str,
+) -> int:
 
     limits = {
         "Concise": 700,
@@ -479,17 +443,17 @@ Your knowledge base is the official Pakistan Code PDF containing:
 IMPORTANT RULES:
 
 1. Answer using the retrieved excerpts supplied in the user message.
-2. Do not invent sections, clauses, punishments, authorities, procedures,
-   dates, case law, or legal requirements.
-3. If the retrieved evidence is insufficient, clearly say that the available
-   source material does not provide enough information.
+2. Do not invent sections, clauses, punishments, authorities,
+   procedures, dates, case law, or legal requirements.
+3. If the retrieved evidence is insufficient, clearly say that
+   the available source material does not provide enough information.
 4. Distinguish between:
    - what the Act says,
-   - your plain-language explanation,
+   - plain-language explanation,
    - application to the user's hypothetical scenario.
 5. Do not fabricate court cases or legal precedents.
-6. If a question is unrelated to Pakistan's cyber laws, politely explain that
-   it is outside the current knowledge base.
+6. If a question is unrelated to Pakistan's cyber laws,
+   explain that it is outside the current knowledge base.
 7. Do not claim to be a lawyer.
 8. Give informational assistance, not personalized legal representation.
 9. Where possible, identify the relevant section and page.
@@ -503,19 +467,12 @@ Language: {answer_language}
 Answer mode: {answer_mode}
 Citation style: {citation_style}
 
-For legal questions, structure the answer clearly when useful:
-
-Relevant provision
-Plain-language explanation
-Application
-Important limitation
-
-Keep the answer readable and practical.
+Keep the answer clear, readable, and practical.
 """
 
 
 # ============================================================
-# GROQ GENERATION
+# GROQ AI FUNCTION
 # ============================================================
 
 def ask_groq(
@@ -535,7 +492,7 @@ def ask_groq(
 
         raise ValueError(
             "GROQ_API_KEY is not configured. "
-            "Add GROQ_API_KEY to Streamlit Secrets."
+            "Please add it to Streamlit Secrets."
         )
 
     client = Groq(
@@ -548,10 +505,10 @@ def ask_groq(
 
         context_blocks.append(
             f"""
-SOURCE:
+SOURCE
 Section: {item["section"]}
 Page: {item["page"]}
-Relevance score: {item["score"]:.3f}
+Relevance: {item["score"]:.3f}
 
 TEXT:
 {item["text"]}
@@ -571,7 +528,7 @@ TEXT:
     )
 
     user_prompt = f"""
-Answer the following question using ONLY the retrieved source material.
+Answer this question using ONLY the retrieved source material.
 
 QUESTION:
 {question}
@@ -579,9 +536,10 @@ QUESTION:
 RETRIEVED SOURCE MATERIAL:
 {retrieved_context}
 
-If the source material does not adequately answer the question, say so.
+If the source material does not adequately answer the question,
+clearly state that the available evidence is insufficient.
 
-Do not make up missing legal information.
+Do not invent missing legal information.
 """
 
     response = client.chat.completions.create(
@@ -626,11 +584,6 @@ with st.sidebar:
 
     st.divider()
 
-    st.markdown(
-        '<div class="section-label">Technicality</div>',
-        unsafe_allow_html=True,
-    )
-
     technicality = st.selectbox(
         "Technicality",
         [
@@ -641,12 +594,6 @@ with st.sidebar:
             "Technical",
         ],
         index=1,
-        label_visibility="collapsed",
-    )
-
-    st.markdown(
-        '<div class="section-label">Response Size</div>',
-        unsafe_allow_html=True,
     )
 
     response_size = st.selectbox(
@@ -658,12 +605,6 @@ with st.sidebar:
             "Very detailed",
         ],
         index=1,
-        label_visibility="collapsed",
-    )
-
-    st.markdown(
-        '<div class="section-label">Answer Language</div>',
-        unsafe_allow_html=True,
     )
 
     answer_language = st.selectbox(
@@ -675,12 +616,6 @@ with st.sidebar:
             "English + Roman Urdu",
         ],
         index=0,
-        label_visibility="collapsed",
-    )
-
-    st.markdown(
-        '<div class="section-label">Answer Mode</div>',
-        unsafe_allow_html=True,
     )
 
     answer_mode = st.selectbox(
@@ -692,12 +627,6 @@ with st.sidebar:
             "Study / learning",
         ],
         index=0,
-        label_visibility="collapsed",
-    )
-
-    st.markdown(
-        '<div class="section-label">Citation Style</div>',
-        unsafe_allow_html=True,
     )
 
     citation_style = st.selectbox(
@@ -708,7 +637,6 @@ with st.sidebar:
             "Detailed",
         ],
         index=0,
-        label_visibility="collapsed",
     )
 
     evidence_count = st.slider(
@@ -718,15 +646,9 @@ with st.sidebar:
         value=5,
     )
 
-    st.markdown(
-        '<div class="section-label">Groq Model</div>',
-        unsafe_allow_html=True,
-    )
-
     model_name = st.text_input(
         "Groq Model",
         value=DEFAULT_GROQ_MODEL,
-        label_visibility="collapsed",
     )
 
     st.divider()
@@ -749,27 +671,21 @@ with st.sidebar:
 
 # ============================================================
 # HERO
+# IMPORTANT: NO HTML HERE
 # ============================================================
 
+st.caption(
+    "🔐 AI-POWERED PAKISTAN CYBER LAW ASSISTANT"
+)
+
+st.title(
+    "⚖️ CYBERLAWGPT"
+)
+
 st.markdown(
-    """
-    <div class="hero">
-        <div class="hero-badge">
-            AI-POWERED PAKISTAN CYBER LAW ASSISTANT
-        </div>
-
-        <div class="hero-title">
-            ⚖️ CYBERLAWGPT
-        </div>
-
-        <div class="hero-subtitle">
-            Ask questions about Pakistan's cyber laws and receive
-            source-grounded answers using Retrieval-Augmented Generation
-            and the Prevention of Electronic Crimes Act, 2016.
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
+    "Ask questions about Pakistan's cyber laws and receive "
+    "source-grounded answers using Retrieval-Augmented Generation "
+    "and the Prevention of Electronic Crimes Act, 2016."
 )
 
 
@@ -804,50 +720,23 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
 
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="metric-number">
-                {len(chunks)}
-            </div>
-            <div class="metric-label">
-                Knowledge Chunks
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.metric(
+        "Knowledge Chunks",
+        len(chunks),
     )
 
 with col2:
 
-    st.markdown(
-        """
-        <div class="metric-card">
-            <div class="metric-number">
-                RAG
-            </div>
-            <div class="metric-label">
-                Retrieval System
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.metric(
+        "Retrieval",
+        "RAG",
     )
 
 with col3:
 
-    st.markdown(
-        """
-        <div class="metric-card">
-            <div class="metric-number">
-                Groq
-            </div>
-            <div class="metric-label">
-                AI Generation
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.metric(
+        "AI Generation",
+        "Groq",
     )
 
 
@@ -878,11 +767,13 @@ for index, suggestion in enumerate(
             use_container_width=True,
         ):
 
-            st.session_state["selected_question"] = suggestion
+            st.session_state.selected_question = (
+                suggestion
+            )
 
 
 # ============================================================
-# DISPLAY CHAT HISTORY
+# CHAT HISTORY
 # ============================================================
 
 for message in st.session_state.messages:
@@ -900,10 +791,9 @@ for message in st.session_state.messages:
 # QUESTION INPUT
 # ============================================================
 
-selected_question = st.session_state.pop(
-    "selected_question",
-    None,
-)
+selected_question = st.session_state.selected_question
+
+st.session_state.selected_question = None
 
 question = st.chat_input(
     "Ask a question about Pakistan's cyber law..."
@@ -963,8 +853,9 @@ if question:
                 )
 
                 # IMPORTANT:
-                # Use normal Streamlit Markdown for AI output.
-                # Do NOT inject the model's answer into HTML.
+                # AI answer is rendered directly.
+                # It is NOT inserted into custom HTML.
+
                 st.markdown(answer)
 
                 st.session_state.messages.append(
@@ -985,16 +876,16 @@ if question:
 
                         st.markdown(
                             f"""
-                            **Passage {index}**
+**Passage {index}**
 
-                            **Section:** {item["section"]}
+**Section:** {item["section"]}
 
-                            **Page:** {item["page"]}
+**Page:** {item["page"]}
 
-                            **Relevance:** {item["score"]:.3f}
+**Relevance:** {item["score"]:.3f}
 
-                            {item["text"]}
-                            """
+{item["text"]}
+"""
                         )
 
                         if index < len(retrieved):
@@ -1007,25 +898,37 @@ if question:
                 if (
                     "GROQ_API_KEY" in error_text
                     or "401" in error_text
-                    or "authentication" in error_text.lower()
+                    or "authentication"
+                    in error_text.lower()
                 ):
 
                     st.error(
                         "Groq authentication failed. "
-                        "Please check your GROQ_API_KEY in Streamlit Secrets."
+                        "Please check your GROQ_API_KEY "
+                        "in Streamlit Secrets."
+                    )
+
+                    st.caption(
+                        f"Technical detail: {error_text}"
                     )
 
                 elif (
                     "model" in error_text.lower()
                     and (
-                        "not found" in error_text.lower()
-                        or "invalid" in error_text.lower()
+                        "not found"
+                        in error_text.lower()
+                        or "invalid"
+                        in error_text.lower()
                     )
                 ):
 
                     st.error(
-                        f"The Groq model '{model_name}' could not be used. "
-                        "Check the model name in the sidebar."
+                        f"The Groq model '{model_name}' "
+                        "could not be used."
+                    )
+
+                    st.caption(
+                        f"Technical detail: {error_text}"
                     )
 
                 else:
@@ -1043,16 +946,11 @@ if question:
 # FOOTER
 # ============================================================
 
-st.markdown(
-    """
-    <div class="disclaimer">
-        <strong>Important:</strong>
-        CYBERLAWGPT provides AI-generated legal information based on
-        the supplied Prevention of Electronic Crimes Act, 2016 PDF.
-        It is not a substitute for advice from a qualified legal
-        professional. Always verify important legal matters against
-        the current official law and applicable legal guidance.
-    </div>
-    """,
-    unsafe_allow_html=True,
+st.markdown("---")
+
+st.caption(
+    "Important: CYBERLAWGPT provides AI-generated legal "
+    "information based on the supplied Prevention of Electronic "
+    "Crimes Act, 2016 PDF. It is not a substitute for advice "
+    "from a qualified legal professional."
 )
